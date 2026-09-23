@@ -1,0 +1,105 @@
+{
+  "name": "@kinarajs/kinara",
+  "version": "0.0.1",
+  "description": "Hook-first microservice framework for Node.js. HTTP, gRPC, events, permissions, cache, and Mongo — copy a module and it runs.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "kinara": "./dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm test && npm run build"
+  },
+  "keywords": [
+    "kinara",
+    "hooks",
+    "events",
+    "microservices",
+    "express",
+    "grpc",
+    "mongodb",
+    "rabbitmq",
+    "otel",
+    "framework"
+  ],
+  "author": "Isurindu Prabashwara",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kinarajs/kinara.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kinarajs/kinara/issues"
+  },
+  "homepage": "https://github.com/kinarajs/kinara#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^5.0.1"
+  },
+  "peerDependencies": {
+    "@aws-sdk/client-s3": "^3.700.0",
+    "@grpc/grpc-js": "^1.12.0",
+    "@grpc/proto-loader": "^0.7.13",
+    "@opentelemetry/api": "^1.9.0",
+    "amqplib": "^0.10.4",
+    "ioredis": "^5.4.1",
+    "mongodb": "^6.12.0",
+    "sharp": "^0.33.5",
+    "ws": "^8.18.0"
+  },
+  "peerDependenciesMeta": {
+    "@aws-sdk/client-s3": {
+      "optional": true
+    },
+    "@grpc/grpc-js": {
+      "optional": true
+    },
+    "@grpc/proto-loader": {
+      "optional": true
+    },
+    "@opentelemetry/api": {
+      "optional": true
+    },
+    "amqplib": {
+      "optional": true
+    },
+    "ioredis": {
+      "optional": true
+    },
+    "mongodb": {
+      "optional": true
+    },
+    "sharp": {
+      "optional": true
+    },
+    "ws": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.10.2",
+    "@types/supertest": "^6.0.3",
+    "supertest": "^7.1.4",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.11"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "kinara-notify-service",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "kinara dev",
+    "start": "kinara start"
+  },
+  "dependencies": {
+    "@kinarajs/kinara": "file:../.."
+  }
+}

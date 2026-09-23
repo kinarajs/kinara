@@ -1,0 +1,8 @@
+declare module "ioredis";
+declare module "mongodb";
+declare module "@aws-sdk/client-s3";
+declare module "amqplib";
+declare module "@grpc/grpc-js";
+declare module "@grpc/proto-loader";
+declare module "ws";
+declare module "sharp";
