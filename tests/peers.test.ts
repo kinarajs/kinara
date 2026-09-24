@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { connectMongo } from "../src/db/mongo.js";
+import { connectMongoose } from "../src/db/mongoose.js";
 import { createRedisCache } from "../src/cache/manager.js";
 import { createS3LogSink } from "../src/log/s3.js";
 import { storeImage } from "../src/media/image.js";
@@ -9,6 +10,12 @@ describe("optional peers", () => {
   it("mongo connect fails closed without the driver or a live server", async () => {
     await expect(connectMongo("mongodb://127.0.0.1:1/kinara")).rejects.toMatchObject({
       code: expect.stringMatching(/MISSING_PEER|MONGO_CONNECT_FAILED/),
+    });
+  });
+
+  it("mongoose connect fails closed without the driver or a live server", async () => {
+    await expect(connectMongoose("mongodb://127.0.0.1:1/kinara")).rejects.toMatchObject({
+      code: expect.stringMatching(/MISSING_PEER|MONGOOSE_CONNECT_FAILED/),
     });
   });
 

@@ -32,6 +32,17 @@ export function defineHook<T = unknown>(definition: HookDefinition<T>): Hook<T> 
 /** @deprecated Use defineHook */
 export const defineAction = defineHook;
 
+/** Logs every listed event. Payload objects are passed through; other values are wrapped. */
+export function defineLogHook(id: string, on: string | string[], message = id): Hook {
+  return defineHook({
+    id,
+    on,
+    handle(payload, { app }) {
+      app.logger.info(message, payload);
+    },
+  });
+}
+
 export function isHook(value: unknown): value is Hook {
   return Boolean(
     value &&

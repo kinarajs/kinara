@@ -22,6 +22,7 @@ describe("rate limiting", () => {
     );
 
     const app = await createApp({ root, quiet: true, mode: "development" });
+    app.finalizeHttp();
     expect((await request(app.http!).get("/ping")).status).toBe(200);
     expect((await request(app.http!).get("/ping")).status).toBe(200);
     const limited = await request(app.http!).get("/ping");

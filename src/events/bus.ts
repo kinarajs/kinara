@@ -63,6 +63,18 @@ export class EventBus {
     return this;
   }
 
+  async emitSafe<T>(event: string, payload?: T): Promise<this> {
+    try {
+      await this.emit(event, payload);
+    } catch (error) {
+      this.logger.error("emit failed", {
+        event,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+    return this;
+  }
+
   async dispatch<T>(event: string, payload?: T): Promise<this> {
     return this.emit(event, payload);
   }

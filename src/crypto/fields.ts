@@ -64,6 +64,60 @@ export function isEncrypted(value: unknown): boolean {
   return typeof value === "string" && value.startsWith(PREFIX);
 }
 
+export interface VersionedKeyring {
+  /** Key id written into new ciphertext, for example `"1"`. */
+  active: string;
+  keys: Record<string, string>;
+}
+
+const VERSIONED = /^v([^:]+):([0-9a-f]+):([0-9a-f]+):([0-9a-f]+)$/i;
+
+/**
+ * Matches the auth-service ciphertext `v{version}:{iv}:{tag}:{hex}`.
+ * The key is the first 32 characters of the base64 SHA-256 digest, used as UTF-8 bytes.
+ */
+export function deriveVersionedKey(secret: string): Buffer {
+  return Buffer.from(createHash("sha256").update(String(secret)).digest("base64").substring(0, 32));
+}
+
+export function isVersionedCipher(value: unknown): boolean {
+  return typeof value === "string" && VERSIONED.test(value);
+}
+
+export function encryptVersioned(text: string, ring: VersionedKeyring): string {
+  const secret = ring.keys[ring.active];
+  if (!secret) {
+    throw new KinaraError(`Encryption key for version ${ring.active} not found.`, {
+      code: "ENCRYPTION_KEY_MISSING",
+      expose: false,
+    });
+  }
+  const iv = randomBytes(12);
+  const cipher = createCipheriv(ALGO, deriveVersionedKey(secret), iv);
+  const encrypted = Buffer.concat([cipher.update(text, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return `v${ring.active}:${iv.toString("hex")}:${tag.toString("hex")}:${encrypted.toString("hex")}`;
+}
+
+export function decryptVersioned(value: string, ring: VersionedKeyring): string {
+  const match = VERSIONED.exec(value);
+  if (!match) return value;
+  const [, version, ivHex, tagHex, encryptedHex] = match;
+  const secret = ring.keys[version];
+  if (!secret) {
+    throw new KinaraError(`Encryption key for version ${version} not found.`, {
+      code: "ENCRYPTION_KEY_MISSING",
+      expose: false,
+    });
+  }
+  const decipher = createDecipheriv(ALGO, deriveVersionedKey(secret), Buffer.from(ivHex, "hex"));
+  decipher.setAuthTag(Buffer.from(tagHex, "hex"));
+  return Buffer.concat([
+    decipher.update(Buffer.from(encryptedHex, "hex")),
+    decipher.final(),
+  ]).toString("utf8");
+}
+
 export function encryptDocument<T extends Record<string, unknown>>(
   document: T,
   fields: string[],

@@ -27,3 +27,17 @@ You can inline `proto` instead of `protoPath`. HTTP status from `KinaraError` ma
 Listen with `app.listen()` (HTTP + gRPC) or set `GRPC_PORT`. Disable with `app.grpc: false` in config.
 
 Use gRPC for cluster-internal calls. Keep HTTP as the public surface behind your gateway.
+
+Clients use the same proto loader:
+
+```ts
+import { createGrpcClient } from "@kinarajs/kinara";
+
+const sms = await createGrpcClient({
+  address: process.env.YALU_ENGINE_GRPC_URL ?? "127.0.0.1:50051",
+  protoPath: new URL("../proto/sms.proto", import.meta.url).pathname,
+  package: "yalu.sms.v1",
+  service: "SmsService",
+});
+const response = await sms.call("SendSms", { to, message });
+```

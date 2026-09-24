@@ -15,12 +15,21 @@ export interface LogSink {
 }
 
 export interface Logger {
-  debug(message: string, extra?: Record<string, unknown>): void;
-  info(message: string, extra?: Record<string, unknown>): void;
-  warn(message: string, extra?: Record<string, unknown>): void;
-  error(message: string, extra?: Record<string, unknown>): void;
+  debug(message: string, extra?: unknown): void;
+  info(message: string, extra?: unknown): void;
+  warn(message: string, extra?: unknown): void;
+  error(message: string, extra?: unknown): void;
   use(sink: LogSink): void;
   flush(): Promise<void>;
+}
+
+/** Hook payloads are `unknown`. Logger sinks always store a plain object. */
+export function asLogExtra(extra: unknown): Record<string, unknown> | undefined {
+  if (extra === undefined) return undefined;
+  if (extra && typeof extra === "object" && !Array.isArray(extra)) {
+    return extra as Record<string, unknown>;
+  }
+  return { value: extra };
 }
 
 export function consoleSink(json: boolean): LogSink {
@@ -46,7 +55,7 @@ export function createLogger(options: { quiet?: boolean; json?: boolean; sinks?:
     process.env.KINARA_DEBUG === "true" ||
     process.env.HARK_DEBUG === "1";
 
-  const write = (level: LogRecord["level"], message: string, extra?: Record<string, unknown>) => {
+  const write = (level: LogRecord["level"], message: string, extra?: unknown) => {
     if (options.quiet && level === "info") return;
     if (level === "debug" && !debugEnabled) return;
     const record: LogRecord = {
@@ -54,7 +63,7 @@ export function createLogger(options: { quiet?: boolean; json?: boolean; sinks?:
       message,
       time: new Date().toISOString(),
       requestId: getRequestId(),
-      extra,
+      extra: asLogExtra(extra),
     };
     for (const sink of sinks) {
       void Promise.resolve(sink.write(record)).catch((error) => {

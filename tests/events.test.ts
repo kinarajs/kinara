@@ -43,6 +43,16 @@ describe("memory event bus", () => {
     await bus.close();
   });
 
+  it("emitSafe does not throw on listener or name errors", async () => {
+    const bus = new EventBus();
+    await bus.on("order.failed", () => {
+      throw new Error("listener");
+    });
+    await expect(bus.emitSafe("order.failed", { id: 1 })).resolves.toBe(bus);
+    await expect(bus.emitSafe("not a valid name", {})).resolves.toBe(bus);
+    await bus.close();
+  });
+
   it("rejects unsafe event names", async () => {
     const bus = new EventBus();
     await expect(bus.emit("../etc/passwd", {})).rejects.toBeInstanceOf(InvalidEventNameError);

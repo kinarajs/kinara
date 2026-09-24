@@ -16,4 +16,12 @@ await users.insertOne({ id, email, createdAt: new Date() });
 
 Kinara connects on boot and closes on `app.close()`. Missing `mongodb` package → `MISSING_PEER`. Bad URL → `MONGO_CONNECT_FAILED` without leaking credentials in production logs.
 
+Already on Mongoose? Keep your models and call:
+
+```ts
+await app.connectMongoose(process.env.MONGO_URI);
+```
+
+or `connectMongoose(url)` from `@kinarajs/kinara`. Missing `mongoose` → `MISSING_PEER`.
+
 Use indexes and connection pooling from the official driver. Kinara does not wrap queries — it only owns the client lifecycle.

@@ -3,6 +3,8 @@ export class KinaraError extends Error {
   readonly statusCode: number;
   readonly details?: unknown;
   readonly expose: boolean;
+  /** Preserved when an existing service exception already has a client-facing name. */
+  legacyName?: string;
 
   constructor(
     message: string,
@@ -118,8 +120,84 @@ export class RateLimitError extends KinaraError {
   }
 }
 
+function codeForStatus(status: number): string {
+  if (status === 400) return "BAD_REQUEST";
+  if (status === 401) return "UNAUTHORIZED";
+  if (status === 403) return "FORBIDDEN";
+  if (status === 404) return "NOT_FOUND";
+  if (status === 409) return "CONFLICT";
+  if (status === 422) return "VALIDATION_ERROR";
+  if (status === 429) return "RATE_LIMITED";
+  return status >= 500 ? "INTERNAL_ERROR" : "REQUEST_FAILED";
+}
+
+function duplicateKeyError(error: unknown): KinaraError | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const candidate = error as { code?: unknown; keyPattern?: Record<string, unknown> };
+  if (candidate.code !== 11000) return undefined;
+  const field = Object.keys(candidate.keyPattern ?? {})[0] ?? "value";
+  const mapped = new ValidationError("Validation failed", {
+    [field]: `record with this ${field} already exists.`,
+  });
+  mapped.legacyName = "ValidationException";
+  return mapped;
+}
+
+function mongooseValidationError(error: unknown): KinaraError | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const candidate = error as {
+    name?: string;
+    errors?: Record<string, { message?: string; properties?: { message?: string } }>;
+  };
+  if (candidate.name !== "ValidationError" || !candidate.errors || typeof candidate.errors !== "object") {
+    return undefined;
+  }
+  const details: Record<string, string> = {};
+  for (const [field, item] of Object.entries(candidate.errors)) {
+    details[field] = item?.properties?.message ?? item?.message ?? "Invalid";
+  }
+  const mapped = new ValidationError("Validation failed", details);
+  mapped.legacyName = "ValidationException";
+  return mapped;
+}
+
+function legacyServiceError(error: unknown): KinaraError | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const candidate = error as {
+    code?: unknown;
+    success?: boolean;
+    name?: string;
+    errors?: unknown;
+    message?: string;
+  };
+  if (typeof candidate.code !== "number" || candidate.code < 400 || candidate.code > 599) return undefined;
+  if (candidate.success !== false && candidate.errors === undefined) return undefined;
+  const message =
+    typeof candidate.errors === "string"
+      ? candidate.errors
+      : candidate.message || "Request failed";
+  const mapped = new KinaraError(message, {
+    code: codeForStatus(candidate.code),
+    statusCode: candidate.code,
+    details: candidate.errors,
+    expose: candidate.code < 500,
+  });
+  if (candidate.name) mapped.legacyName = candidate.name;
+  return mapped;
+}
+
 export function toKinaraError(error: unknown): KinaraError {
   if (error instanceof KinaraError) return error;
+
+  const duplicate = duplicateKeyError(error);
+  if (duplicate) return duplicate;
+
+  const mongooseValidation = mongooseValidationError(error);
+  if (mongooseValidation) return mongooseValidation;
+
+  const legacy = legacyServiceError(error);
+  if (legacy) return legacy;
+
   if (error && typeof error === "object") {
     const candidate = error as {
       message?: string;

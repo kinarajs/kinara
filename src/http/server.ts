@@ -3,15 +3,24 @@ import type { Server } from "node:http";
 import { KinaraError } from "../errors.js";
 import type { RuntimeMode } from "../runtime.js";
 
+export interface HttpCreateOptions {
+  jsonLimit?: string;
+  urlencodedLimit?: string;
+}
+
 export async function createHttp(
-  mode: RuntimeMode = "development"
+  mode: RuntimeMode = "development",
+  options: HttpCreateOptions = {}
 ): Promise<{ http: Express; router: Router }> {
   try {
     const express = (await import("express")).default;
+    const fallback = mode === "production" ? "256kb" : "1mb";
+    const jsonLimit = options.jsonLimit ?? fallback;
+    const urlencodedLimit = options.urlencodedLimit ?? jsonLimit;
     const http = express();
     http.disable("x-powered-by");
-    http.use(express.json({ limit: mode === "production" ? "256kb" : "1mb" }));
-    http.use(express.urlencoded({ extended: true, limit: mode === "production" ? "256kb" : "1mb" }));
+    http.use(express.json({ limit: jsonLimit }));
+    http.use(express.urlencoded({ extended: true, limit: urlencodedLimit }));
     const router = express.Router();
     return { http, router };
   } catch {

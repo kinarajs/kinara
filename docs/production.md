@@ -19,7 +19,7 @@ Or `kinara start` after compile. Do not use `kinara dev` / `tsx watch` in produc
 - [ ] Mongo URL from secrets, not source
 - [ ] OTEL adapter registered before `createApp`
 - [ ] Optional S3 log bucket + IAM write-only role
-- [ ] Health route on HTTP (`/health`) for probes
+- [ ] Health route on HTTP (`/health` / `/healthz` are built in) for probes
 - [ ] Gateway is the only public listener; gRPC stays cluster-internal
 - [ ] Resource limits: Node 20+, enough file descriptors for gRPC + Mongo
 

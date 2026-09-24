@@ -8,12 +8,12 @@ describe("exception handling", () => {
     const handler = new ExceptionHandler(createLogger({ quiet: true }));
     const client = handler.render(new ValidationError("bad email", { field: "email" }), "production");
     expect(client.status).toBe(422);
-    expect(client.body.error.message).toBe("bad email");
+    expect((client.body.error as { message: string }).message).toBe("bad email");
 
     const boom = await handler.report(new Error("secret stack"));
     const hidden = handler.render(boom, "production");
     expect(hidden.status).toBe(500);
-    expect(hidden.body.error.message).toBe("Internal server error");
+    expect((hidden.body.error as { message: string }).message).toBe("Internal server error");
   });
 
   it("does not report expected client errors", async () => {

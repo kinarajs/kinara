@@ -61,3 +61,16 @@ export function sendFail(
 export function sendCreated<T>(res: Response, data: T): void {
   sendOk(res, data, 201);
 }
+
+/** `{ success: true, ...data }` used by services that predate the Kinara envelope. */
+export function legacyOk<T extends Record<string, unknown>>(data: T): { success: true } & T {
+  return { success: true, ...data };
+}
+
+export function sendLegacy<T extends Record<string, unknown>>(
+  res: Response,
+  data: T,
+  status = 200
+): void {
+  res.status(status).json(legacyOk(data));
+}

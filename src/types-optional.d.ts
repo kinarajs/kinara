@@ -6,3 +6,4 @@ declare module "@grpc/grpc-js";
 declare module "@grpc/proto-loader";
 declare module "ws";
 declare module "sharp";
+declare module "memcached";

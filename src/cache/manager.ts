@@ -103,6 +103,56 @@ export class CacheManager {
   }
 }
 
+export interface MemcachedLike {
+  get(key: string, cb: (err: Error | null, data: unknown) => void): void;
+  set(key: string, value: unknown, lifetime: number, cb: (err: Error | null) => void): void;
+  del(key: string, cb: (err: Error | null) => void): void;
+  end?(): void;
+}
+
+function memcachedCallback<T>(run: (cb: (err: Error | null, data?: unknown) => void) => void): Promise<T | undefined> {
+  return new Promise((resolve, reject) => {
+    run((err, data) => (err ? reject(err) : resolve(data as T | undefined)));
+  });
+}
+
+/** Memcached driver. TTL is milliseconds, converted to whole seconds (minimum 1). */
+export class MemcachedCache implements CacheDriver {
+  readonly name = "memcached";
+
+  constructor(private readonly client: MemcachedLike) {}
+
+  async get<T>(key: string): Promise<T | undefined> {
+    const data = await memcachedCallback<T>((cb) => this.client.get(key, cb));
+    return data === undefined || data === null ? undefined : data;
+  }
+
+  async set<T>(key: string, value: T, ttlMs?: number): Promise<void> {
+    const seconds = ttlMs ? Math.max(1, Math.ceil(ttlMs / 1000)) : 0;
+    await memcachedCallback((cb) => this.client.set(key, value, seconds, cb));
+  }
+
+  async del(key: string): Promise<void> {
+    await memcachedCallback((cb) => this.client.del(key, cb));
+  }
+
+  async close(): Promise<void> {
+    this.client.end?.();
+  }
+}
+
+export async function createMemcachedCache(servers: string | string[]): Promise<MemcachedCache> {
+  try {
+    const imported = (await import("memcached")) as { default?: new (servers: string | string[]) => MemcachedLike };
+    const Memcached = imported.default ?? (imported as unknown as new (servers: string | string[]) => MemcachedLike);
+    return new MemcachedCache(new Memcached(servers));
+  } catch {
+    throw new KinaraError("Memcached cache requires the optional peer `memcached`.", {
+      code: "MISSING_PEER",
+    });
+  }
+}
+
 export async function createRedisCache(url: string): Promise<RedisCache> {
   try {
     const Redis = (await import("ioredis")).default;

@@ -17,6 +17,8 @@ export default defineHook({
 
 Put the file in `modules/<name>/hooks/`. Kinara scans that folder only.
 
+`defineLogHook("log-auth", ["user.created", "auth.started"])` is the same hook with the payload passed to `app.logger.info`. Logger meta accepts `unknown`, so hook payloads do not need a cast.
+
 `on` can be a list or a safe wildcard: `user.*`.
 
 ## Emit

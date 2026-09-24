@@ -45,6 +45,7 @@ describe("response envelopes", () => {
     );
 
     const app = await createApp({ root, quiet: true });
+    app.finalizeHttp();
     const missing = await request(app.http!).get("/missing");
     expect(missing.status).toBe(404);
     expect(missing.body.ok).toBe(false);

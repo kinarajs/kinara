@@ -44,6 +44,17 @@ const app = await createApp({ root: import.meta.dirname });
 await app.listen(3000);
 ```
 
+Already have Express routes? Mount them and keep working:
+
+```ts
+const app = await createApp({ root: import.meta.dirname, rateLimit: false });
+app.use("/sms", smsRouter);          // or app.mount(existingExpressApp)
+await app.listen(4500);
+await app.emitSafe("sms.started", { port: 4500 });
+```
+
+`createApp` loads `.env`, serves `/health` and `/healthz`, and waits until `listen()` to attach the 404 handler so you can still `use()` / `mount()` after boot. CommonJS services can `const { createApp } = await import("@kinarajs/kinara")`.
+
 ```ts
 // src/modules/auth/hooks/log-user-signup.ts
 import { defineHook } from "@kinarajs/kinara";

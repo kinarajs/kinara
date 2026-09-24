@@ -38,7 +38,11 @@ src/modules/invoices/hooks/log-paid.ts
 4. Permission roles
 5. HTTP (security headers, request id, optional rate limit)
 6. Module providers, named middleware, hooks, routes, gRPC
-7. Envelope 404 + error handler
+7. Built-in `/health` and `/healthz` (disable with `health: false`)
+8. You can `app.use()` / `app.mount()` more routes after boot
+9. `listen()` attaches the envelope 404 + error handler
+
+`boot({ serviceName, port, onReady })` is the process entry: it calls `createApp`, connects `MONGO_URI` when set, listens, emits `${serviceName}.started`, and closes on SIGINT and SIGTERM. Pass `signals: false` in tests.
 
 ## Next
 

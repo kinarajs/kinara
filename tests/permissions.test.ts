@@ -63,6 +63,7 @@ describe("permissions", () => {
     );
 
     const app = await createApp({ root, quiet: true });
+    app.finalizeHttp();
     const denied = await request(app.http!).get("/users");
     expect(denied.status).toBe(403);
     expect(denied.body.ok).toBe(false);

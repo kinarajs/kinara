@@ -7,7 +7,20 @@ import type { Logger } from "../logger.js";
 
 export type ExceptionReporter = (error: KinaraError, context: { requestId?: string }) => void | Promise<void>;
 
+export type ResponseStyle = "envelope" | "legacy";
+
+const LEGACY_NAMES: Record<string, string> = {
+  BAD_REQUEST: "BadRequestException",
+  UNAUTHORIZED: "UnauthorizedException",
+  FORBIDDEN: "ForbiddenException",
+  NOT_FOUND: "NotFoundException",
+  CONFLICT: "ConflictException",
+  VALIDATION_ERROR: "validationException",
+  RATE_LIMITED: "RateLimitException",
+};
+
 export class ExceptionHandler {
+  responseStyle: ResponseStyle = "envelope";
   private readonly reporters: ExceptionReporter[] = [];
   private readonly silent = new Set<string>(["NOT_FOUND", "VALIDATION_ERROR", "UNAUTHORIZED", "FORBIDDEN"]);
 
@@ -48,8 +61,9 @@ export class ExceptionHandler {
     return mapped;
   }
 
-  render(error: unknown, mode?: RuntimeMode) {
+  render(error: unknown, mode?: RuntimeMode): { status: number; body: Record<string, unknown> } {
     const mapped = toKinaraError(error);
+    if (this.responseStyle === "legacy") return renderLegacy(mapped, mode);
     const production = mode ? mode === "production" : isProduction();
     const message = mapped.expose || !production ? mapped.message : "Internal server error";
     const details = mapped.expose || !production ? mapped.details : undefined;
@@ -61,6 +75,33 @@ export class ExceptionHandler {
       },
     };
   }
+}
+
+function renderLegacy(mapped: KinaraError, mode?: RuntimeMode) {
+  const production = mode ? mode === "production" : isProduction();
+  if (mapped.statusCode >= 500) {
+    const msg = mapped.expose && !production ? mapped.message : "something went wrong";
+    return {
+      status: mapped.statusCode,
+      body: { success: false, msg },
+    };
+  }
+  const fieldMap =
+    mapped.details && typeof mapped.details === "object" && !Array.isArray(mapped.details);
+  const name =
+    mapped.legacyName ??
+    (mapped.code === "VALIDATION_ERROR" && fieldMap ? "ValidationException" : undefined) ??
+    LEGACY_NAMES[mapped.code] ??
+    "RequestException";
+  return {
+    status: mapped.statusCode,
+    body: {
+      success: false,
+      code: mapped.statusCode,
+      name,
+      errors: mapped.details === undefined ? mapped.message : mapped.details,
+    },
+  };
 }
 
 export async function report(error: unknown, handler?: ExceptionHandler): Promise<KinaraError> {

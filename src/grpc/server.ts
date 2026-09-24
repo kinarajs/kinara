@@ -1,9 +1,6 @@
-import path from "node:path";
-import { writeFile, mkdir } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { randomBytes } from "node:crypto";
 import type { Kinara } from "../app.js";
 import type { RpcService } from "./define.js";
+import { resolveProtoFile } from "./proto.js";
 import { KinaraError, toKinaraError } from "../errors.js";
 
 type GrpcLike = {
@@ -45,7 +42,7 @@ export class KinaraGrpcServer {
     this.grpc = grpc;
     this.server ??= new grpc.Server();
 
-    const protoFile = await resolveProto(service);
+    const protoFile = await resolveProtoFile(service);
     const packageDefinition = protoLoader.loadSync(protoFile, {
       keepCase: true,
       longs: String,
@@ -122,19 +119,6 @@ function statusFromHttp(status: number, grpc: GrpcLike): number {
   if (status === 429) return grpc.status.RESOURCE_EXHAUSTED;
   if (status < 500) return grpc.status.FAILED_PRECONDITION;
   return grpc.status.INTERNAL;
-}
-
-async function resolveProto(service: RpcService): Promise<string> {
-  if (service.protoPath) return path.resolve(service.protoPath);
-  if (!service.proto) {
-    throw new KinaraError(`RPC ${service.service} needs proto or protoPath`, {
-      code: "GRPC_PROTO_MISSING",
-    });
-  }
-  const file = path.join(tmpdir(), `kinara-${randomBytes(6).toString("hex")}.proto`);
-  await mkdir(path.dirname(file), { recursive: true });
-  await writeFile(file, service.proto);
-  return file;
 }
 
 async function loadGrpc(): Promise<{ grpc: GrpcLike; protoLoader: ProtoLoaderLike }> {

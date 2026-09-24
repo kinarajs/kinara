@@ -20,3 +20,14 @@ export default { driver: "redis", redis: { url: process.env.REDIS_URL } };
 ```
 
 Or `REDIS_URL` in the environment. Rate limiting uses the same cache when enabled, so Redis is the right choice behind more than one replica.
+
+Memcached:
+
+```bash
+npm install memcached
+```
+
+```ts
+// src/config/cache.ts
+export default { driver: "memcached", memcached: { servers: process.env.MEMCACHED_SERVERS } };
+```
